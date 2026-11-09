@@ -1,10 +1,28 @@
 <!DOCTYPE html>
 <!--
-  Company brief, one-file mock-up.
-  MIT License. Copyright (c) 2026 Stephane Lepain (CPLT). Full text: LICENSE in
-  https://github.com/stephanelepain-hub/company-brief
-  This file makes no network requests and stores nothing: no scripts, fonts or images
-  are loaded from anywhere, and nothing is saved when you close the tab.
+  Company brief. One HTML file, no dependencies, no network requests made by this file.
+
+  MIT License
+
+  Copyright (c) 2026 Stephane Lepain (CPLT)
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
 -->
 <html lang="en">
 <head>
@@ -30,6 +48,10 @@
   #out { display:none; margin-top:28px; }
   #brief { min-height: 300px; font-family: ui-monospace, Consolas, monospace; font-size:.9rem; }
   #status { color: var(--muted); margin-top:8px; min-height:1.5em; }
+  #err { color:#b3261e; font-weight:600; margin:16px 0 0; }
+  #err:empty { display:none; }
+  [aria-invalid="true"] { border-color:#b3261e; }
+  #brief:focus { outline:2px solid var(--accent); }
   ol { padding-left: 1.2rem; }
   footer { color:var(--muted); font-size:.85rem; margin-top:40px; }
 </style>
@@ -40,12 +62,13 @@
   <p class="lead">Answer ten questions once. Get one brief you can give to any AI assistant, so its answers sound like your company and stay within your rules.</p>
 
   <div class="note">
-    <strong>Your privacy.</strong> This page does not send anything anywhere and does not save anything: when you close it, your answers are gone. Download the brief if you want to keep it.
-    When you paste the brief into an assistant (ChatGPT, Claude, Gemini, Copilot, Mistral, LibreChat or another), that assistant's provider receives it, so only include what you are comfortable sharing with them.
+    <strong>Your privacy.</strong> What you type stays in this page: it is not sent anywhere and the page does not save it. Opening the page online does load it from GitHub Pages, which sees the visit, not your answers. To work fully offline, <a href="https://github.com/stephanelepain-hub/company-brief/raw/main/index.html">download the file</a> and open it in your browser. Your browser or its extensions may keep their own copy; the page cannot control that.
+    <br><br><strong>When you paste the brief into an assistant</strong> (ChatGPT, Claude, Gemini, Copilot, Mistral, LibreChat or another), that assistant's provider receives all of it, prices included. Do not enter passwords, bank details or private customer information. The "never share" list is an instruction to the assistant; it cannot stop it from disclosing something.
   </div>
 
   <form id="f" autocomplete="off" onsubmit="return false"></form>
 
+  <p id="err" role="alert"></p>
   <button type="button" id="make">Make my brief</button>
   <button type="button" class="secondary" id="example">Fill with an example</button>
 
@@ -65,7 +88,7 @@
     </ol>
   </section>
 
-  <footer>Open source under the MIT licence. Early mock-up: tell us what is missing or unclear.</footer>
+  <footer>Open source under the MIT licence. Early version: <a href="https://github.com/stephanelepain-hub/company-brief/issues">tell us what is missing or unclear</a>.</footer>
 </main>
 
 <script>
@@ -106,7 +129,15 @@ function block(title, s, empty) {
 
 function build() {
   var missing = Q.filter(function (q) { return q.req && !val(q.id); });
-  if (missing.length) { status("Please answer: " + missing.map(function (q) { return q.label; }).join(" / ")); document.getElementById(missing[0].id).focus(); return; }
+  Q.forEach(function (q) { document.getElementById(q.id).removeAttribute("aria-invalid"); });
+  if (missing.length) {
+    hideOut();
+    missing.forEach(function (q) { document.getElementById(q.id).setAttribute("aria-invalid", "true"); });
+    document.getElementById("err").textContent = "Please answer: " + missing.map(function (q) { return q.label; }).join(" / ");
+    document.getElementById(missing[0].id).focus();
+    return;
+  }
+  document.getElementById("err").textContent = "";
   var b = "";
   b += "COMPANY BRIEF: " + val("company") + "\n\n";
   b += "How to use this brief: it is background about our company. Follow it when you write for us. ";
@@ -127,9 +158,14 @@ function build() {
 }
 
 function status(t) { document.getElementById("status").textContent = t; }
+function hideOut() { document.getElementById("out").style.display = "none"; document.getElementById("brief").value = ""; status(""); }
+// Any edit makes the shown brief out of date: hide it until "Make my brief" is pressed again.
+form.addEventListener("input", function () { if (document.getElementById("brief").value) hideOut(); });
 
 document.getElementById("make").onclick = build;
 document.getElementById("example").onclick = function () {
+  var typed = Q.some(function (q) { return val(q.id); });
+  if (typed && !window.confirm("Replace your answers with the example?")) return;
   Q.forEach(function (q) { document.getElementById(q.id).value = q.ex; });
   build();
 };
@@ -137,9 +173,11 @@ document.getElementById("copy").onclick = function () {
   var t = document.getElementById("brief");
   t.select();
   var done = function () { status("Copied. Now paste it into your assistant."); };
+  var manual = function () { t.focus(); t.select(); status("Could not copy automatically. The brief is selected: press Ctrl+C (Cmd+C on a Mac) to copy it."); };
+  var legacy = function () { var ok = false; try { ok = document.execCommand("copy"); } catch (e) { ok = false; } if (ok) done(); else manual(); };
   if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(t.value).then(done, function () { document.execCommand("copy"); done(); });
-  } else { document.execCommand("copy"); done(); }
+    navigator.clipboard.writeText(t.value).then(done, legacy);
+  } else { legacy(); }
 };
 document.getElementById("save").onclick = function () {
   var a = document.createElement("a");
