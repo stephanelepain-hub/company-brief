@@ -35,6 +35,8 @@
   * { box-sizing: border-box; }
   body { margin:0; font:16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:var(--ink); background:var(--bg); }
   main { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
+  .brand { display:inline-flex; align-items:center; gap:10px; color:var(--ink); text-decoration:none; font-weight:700; letter-spacing:.04em; margin-bottom:20px; }
+  .brand svg { width:36px; height:36px; border-radius:8px; display:block; }
   h1 { font-size: 1.6rem; margin: 0 0 4px; }
   .lead { color: var(--muted); margin: 0 0 20px; }
   .note { background:#fff; border:1px solid var(--line); border-radius:8px; padding:12px 14px; font-size:.95rem; margin-bottom:24px; }
@@ -58,6 +60,10 @@
 </head>
 <body>
 <main>
+  <a class="brand" href="https://cplt.tech" aria-label="CPLT, cplt.tech">
+    <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect width="32" height="32" fill="#0A0A0B"/><g transform="translate(16 16) scale(1.2) translate(-17 -15.5)"><path d="M22 11.5C20.7 9.4 18.5 8 16 8c-4 0-7.2 3.3-7.2 7.5 0 4.2 3.2 7.5 7.2 7.5 2.5 0 4.7-1.4 6-3.5" stroke="#F5F2EA" stroke-width="2.4" stroke-linecap="round"/><circle cx="23.5" cy="20" r="2.2" fill="#E5B169"/></g></svg>
+    <span>CPLT</span>
+  </a>
   <h1>Company brief</h1>
   <p class="lead">Answer ten questions once. Get one brief you can give to any AI assistant, so its answers sound like your company and stay within your rules.</p>
 
@@ -88,7 +94,7 @@
     </ol>
   </section>
 
-  <footer>Open source under the MIT licence. Early version: <a href="https://github.com/stephanelepain-hub/company-brief/issues">tell us what is missing or unclear</a>.</footer>
+  <footer>Made by <a href="https://cplt.tech">CPLT</a>. Open source under the MIT licence. Early version: <a href="https://github.com/stephanelepain-hub/company-brief/issues">tell us what is missing or unclear</a>.</footer>
 </main>
 
 <script>
