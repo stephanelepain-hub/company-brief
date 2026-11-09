@@ -8,4 +8,4 @@ One web page that helps a small business write a single brief about itself (who 
 - Nothing you type leaves your browser.
 - MIT licence: any company can use, change and reuse the code.
 
-Status: early mock-up. Not ready for use yet.
+Status: early mock-up. Download `index.html` and open it in your browser.

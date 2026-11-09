@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<!--
+  Company brief, one-file mock-up.
+  MIT License. Copyright (c) 2026 Stephane Lepain (CPLT). Full text: LICENSE in
+  https://github.com/stephanelepain-hub/company-brief
+  This file makes no network requests and stores nothing: no scripts, fonts or images
+  are loaded from anywhere, and nothing is saved when you close the tab.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>Company brief</title>
+<style>
+  :root { --ink:#1d1d1f; --muted:#5f6368; --line:#d9dce1; --bg:#fafafa; --accent:#1f5fbf; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:var(--ink); background:var(--bg); }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 20px; }
+  .note { background:#fff; border:1px solid var(--line); border-radius:8px; padding:12px 14px; font-size:.95rem; margin-bottom:24px; }
+  label { display:block; font-weight:600; margin-top:18px; }
+  .help { display:block; font-weight:400; color:var(--muted); font-size:.92rem; }
+  input, textarea { width:100%; margin-top:6px; padding:9px 10px; border:1px solid var(--line); border-radius:6px; font:inherit; background:#fff; }
+  textarea { min-height: 100px; resize: vertical; }
+  .req { color:#b3261e; font-weight:400; }
+  button { font:inherit; padding:10px 16px; border-radius:6px; border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; margin:24px 8px 0 0; }
+  button.secondary { background:#fff; color:var(--accent); }
+  #out { display:none; margin-top:28px; }
+  #brief { min-height: 300px; font-family: ui-monospace, Consolas, monospace; font-size:.9rem; }
+  #status { color: var(--muted); margin-top:8px; min-height:1.5em; }
+  ol { padding-left: 1.2rem; }
+  footer { color:var(--muted); font-size:.85rem; margin-top:40px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Company brief</h1>
+  <p class="lead">Answer ten questions once. Get one brief you can give to any AI assistant, so its answers sound like your company and stay within your rules.</p>
+
+  <div class="note">
+    <strong>Your privacy.</strong> This page does not send anything anywhere and does not save anything: when you close it, your answers are gone. Download the brief if you want to keep it.
+    When you paste the brief into an assistant (ChatGPT, Claude, Gemini, Copilot, Mistral, LibreChat or another), that assistant's provider receives it, so only include what you are comfortable sharing with them.
+  </div>
+
+  <form id="f" autocomplete="off" onsubmit="return false"></form>
+
+  <button type="button" id="make">Make my brief</button>
+  <button type="button" class="secondary" id="example">Fill with an example</button>
+
+  <section id="out" aria-live="polite">
+    <h2>Your brief</h2>
+    <textarea id="brief" readonly aria-label="Your brief"></textarea>
+    <div>
+      <button type="button" id="copy">Copy</button>
+      <button type="button" class="secondary" id="save">Download as text</button>
+    </div>
+    <p id="status"></p>
+    <h3>How to use it</h3>
+    <ol>
+      <li>Open your assistant's settings and look for custom instructions, a project, or a "knowledge" area. The name and the length limit differ between assistants and change over time; check yours.</li>
+      <li>Paste the brief there. If your assistant has no such place, paste it at the start of a new chat.</li>
+      <li>Read what the assistant writes before you send it to anyone. The brief helps; it does not make the answers correct.</li>
+    </ol>
+  </section>
+
+  <footer>Open source under the MIT licence. Early mock-up: tell us what is missing or unclear.</footer>
+</main>
+
+<script>
+"use strict";
+// The ten questions (content drafted by Dorx, adjusted by Rocinante: prices, terms and the never-share list restored).
+var Q = [
+  { id:"company",  label:"What is your company called?", help:"The name you want the assistant to use.", type:"text", req:true, ex:"Example Bikes" },
+  { id:"what",     label:"What does your company do?", help:"One or two sentences.", type:"area", req:true, ex:"We repair and service bicycles in our workshop and offer a pick-up service." },
+  { id:"customers",label:"Who are your customers?", help:"Who usually buys from you and who reads your messages.", type:"area", req:true, ex:"People who cycle to work, and families with children's bikes." },
+  { id:"offer",    label:"What do you offer?", help:"Your main products or services, one per line.", type:"area", req:true, ex:"Repairs\nYearly service\nPick-up and delivery" },
+  { id:"prices",   label:"What are your prices?", help:"Only prices you are happy to quote. Leave empty and the assistant will be told not to quote any.", type:"area", req:false, ex:"Yearly service: 89 EUR\nPick-up within 10 km: 15 EUR" },
+  { id:"terms",    label:"What are your standard terms?", help:"Opening hours, delivery times, payment, guarantee, cancellation.", type:"area", req:false, ex:"Open Tuesday to Saturday, 9:00 to 18:00\nRepairs usually ready in 3 working days\n3-month guarantee on parts we fit" },
+  { id:"voice",    label:"How should you sound?", help:"Tone and style.", type:"text", req:false, ex:"Friendly, short and practical. We say \"you\", not \"the customer\"." },
+  { id:"rules",    label:"What rules must answers follow?", help:"Do's and don'ts, one per line.", type:"area", req:false, ex:"Never promise a date before we have seen the bike\nOffer a call back for anything complicated" },
+  { id:"facts",    label:"What else should the assistant know?", help:"Useful facts you are comfortable sharing.", type:"area", req:false, ex:"We are a team of three.\nWe sell spare parts but not new bikes." },
+  { id:"never",    label:"What must never be shared?", help:"Name the kinds of information, never the information itself (for example \"bank details\", not the account number).", type:"area", req:false, ex:"Customer names and addresses\nBank details\nSupplier prices" }
+];
+
+var form = document.getElementById("f");
+Q.forEach(function (q) {
+  var l = document.createElement("label");
+  l.htmlFor = q.id;
+  l.textContent = q.label + " ";
+  if (q.req) { var r = document.createElement("span"); r.className = "req"; r.textContent = "(required)"; l.appendChild(r); }
+  var h = document.createElement("span"); h.className = "help"; h.textContent = q.help; l.appendChild(h);
+  var i = document.createElement(q.type === "area" ? "textarea" : "input");
+  i.id = q.id; i.name = q.id; if (q.type !== "area") i.type = "text";
+  form.appendChild(l); form.appendChild(i);
+});
+
+function val(id) { return document.getElementById(id).value.trim(); }
+function lines(s) { return s.split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean); }
+function block(title, s, empty) {
+  if (!s) return empty ? title + ":\n" + empty + "\n\n" : "";
+  var ls = lines(s);
+  return title + ":\n" + (ls.length > 1 ? ls.map(function (x) { return "- " + x; }).join("\n") : ls[0]) + "\n\n";
+}
+
+function build() {
+  var missing = Q.filter(function (q) { return q.req && !val(q.id); });
+  if (missing.length) { status("Please answer: " + missing.map(function (q) { return q.label; }).join(" / ")); document.getElementById(missing[0].id).focus(); return; }
+  var b = "";
+  b += "COMPANY BRIEF: " + val("company") + "\n\n";
+  b += "How to use this brief: it is background about our company. Follow it when you write for us. ";
+  b += "If something you need is not in it, ask or say you do not know. Never invent prices, dates, terms or commitments.\n\n";
+  b += block("What we do", val("what"));
+  b += block("Our customers", val("customers"));
+  b += block("What we offer", val("offer"));
+  b += block("Prices", val("prices"), "Do not quote any price. Say we will confirm the price.");
+  b += block("Standard terms", val("terms"));
+  b += block("Tone", val("voice"));
+  b += block("Rules", val("rules"));
+  b += block("Other facts", val("facts"));
+  b += block("Never share or ask for", val("never"));
+  document.getElementById("brief").value = b.trim() + "\n";
+  document.getElementById("out").style.display = "block";
+  status("");
+  document.getElementById("out").scrollIntoView({ behavior: "smooth" });
+}
+
+function status(t) { document.getElementById("status").textContent = t; }
+
+document.getElementById("make").onclick = build;
+document.getElementById("example").onclick = function () {
+  Q.forEach(function (q) { document.getElementById(q.id).value = q.ex; });
+  build();
+};
+document.getElementById("copy").onclick = function () {
+  var t = document.getElementById("brief");
+  t.select();
+  var done = function () { status("Copied. Now paste it into your assistant."); };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(t.value).then(done, function () { document.execCommand("copy"); done(); });
+  } else { document.execCommand("copy"); done(); }
+};
+document.getElementById("save").onclick = function () {
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([document.getElementById("brief").value], { type: "text/plain" }));
+  a.download = "company-brief.txt";
+  document.body.appendChild(a); a.click(); a.remove();
+  status("Saved as company-brief.txt in your downloads.");
+};
+</script>
+</body>
+</html>
